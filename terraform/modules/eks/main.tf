@@ -1,7 +1,7 @@
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.34"
+  version = "18.32.0"
 
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
@@ -103,35 +103,13 @@ module "eks" {
   # Enable cluster creator admin permissions
   enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
 
-  # Access entries for cluster access
-  access_entries = merge(
-    var.access_entries,
+  map_users = [
     {
-      "arn:aws:iam::713881830177:user/iamadmin" = {
-        kubernetes_groups = ["eks-admins"]
-        principal_arn     = "arn:aws:iam::713881830177:user/iamadmin"
-        type              = "STANDARD"
-      }
+      userarn  = "arn:aws:iam::713881830177:user/iamadmin"
+      username = "iamadmin"
+      groups   = ["system:masters"]
     }
-  )
+  ]
 
   tags = var.common_tags
-}
-# ClusterRoleBinding for eks-admins group
-resource "kubernetes_cluster_role_binding" "eks_admins_binding" {
-  metadata {
-    name = "iamadmin-cluster-admin"
-  }
-
-  role_ref {
-    api_group = "rbac.authorization.k8s.io"
-    kind      = "ClusterRole"
-    name      = "cluster-admin"
-  }
-
-  subject {
-    kind      = "Group"
-    name      = "eks-admins"  # matches kubernetes_groups above
-    api_group = "rbac.authorization.k8s.io"
-  }
 }
