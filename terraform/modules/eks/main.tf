@@ -110,7 +110,7 @@ module "eks" {
       "arn:aws:iam::713881830177:user/iamadmin" = {
         kubernetes_groups = ["system:masters"]
         principal_arn     = "arn:aws:iam::713881830177:user/iamadmin"
-        type              = "STANDARD_LINUX_USER"
+        type              = "STANDARD"
       }
     }
   )
