@@ -108,7 +108,7 @@ module "eks" {
     var.access_entries,
     {
       "arn:aws:iam::713881830177:user/iamadmin" = {
-        kubernetes_groups = ["system:masters"]
+        kubernetes_groups = ["eks-admins"]
         principal_arn     = "arn:aws:iam::713881830177:user/iamadmin"
         type              = "STANDARD"
       }
@@ -116,4 +116,22 @@ module "eks" {
   )
 
   tags = var.common_tags
+}
+# ClusterRoleBinding for eks-admins group
+resource "kubernetes_cluster_role_binding" "eks_admins_binding" {
+  metadata {
+    name = "iamadmin-cluster-admin"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "cluster-admin"
+  }
+
+  subject {
+    kind      = "Group"
+    name      = "eks-admins"  # matches kubernetes_groups above
+    api_group = "rbac.authorization.k8s.io"
+  }
 }
