@@ -98,10 +98,22 @@ module "eks" {
   }
 
   # Access entries for cluster access
-  access_entries = var.access_entries
+  #access_entries = var.access_entries
 
   # Enable cluster creator admin permissions
   enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
+
+  # Access entries for cluster access
+  access_entries = merge(
+    var.access_entries,
+    {
+      "arn:aws:iam::713881830177:user/iamadmin" = {
+        kubernetes_groups = ["system:masters"]
+        principal_arn     = "arn:aws:iam::713881830177:user/iamadmin"
+        type              = "STANDARD_LINUX_USER"
+      }
+    }
+  )
 
   tags = var.common_tags
 }
