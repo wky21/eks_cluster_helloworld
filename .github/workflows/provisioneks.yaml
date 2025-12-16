@@ -32,7 +32,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.7.7  # adjust version if needed
+          terraform_version: latest  # adjust version if needed
 
       # 4. Initialize Terraform with existing S3 + DynamoDB backend
       - name: Terraform Init
