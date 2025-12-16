@@ -9,7 +9,9 @@ on:
 jobs:
   terraform:
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write      #  REQUIRED for OIDC
+      contents: read
     env:
       AWS_REGION: us-east-1
       TF_VAR_cluster_name: "eks-test-cluster"
