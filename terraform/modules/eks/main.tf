@@ -1,7 +1,7 @@
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "18.32.0"
+  version = "19.32.0"
 
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
@@ -103,13 +103,13 @@ module "eks" {
   # Enable cluster creator admin permissions
   enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
 
-  map_users = [
-    {
-      userarn  = "arn:aws:iam::713881830177:user/iamadmin"
-      username = "iamadmin"
-      groups   = ["system:masters"]
-    }
-  ]
+  #map_users = [
+  #  {
+  #    userarn  = "arn:aws:iam::713881830177:user/iamadmin"
+  #    username = "iamadmin"
+  #    groups   = ["system:masters"]
+  #  }
+  #]
 
   tags = var.common_tags
 }

@@ -10,6 +10,9 @@ on:
 jobs:
   destroy-eks:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write      #  REQUIRED for OIDC
+      contents: read
 
     env:
       AWS_REGION: us-east-1
