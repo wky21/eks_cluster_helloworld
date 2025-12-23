@@ -13,6 +13,8 @@ provider "aws" {
   region = "us-east-1"
 }
 
+data "aws_caller_identity" "current" {}
+
 # Local values for cost-optimized testing configuration
 locals {
   cluster_name = "eks-test-cluster"
@@ -80,6 +82,14 @@ module "eks" {
   
   # Enable cluster creator admin permissions for testing
   enable_cluster_creator_admin_permissions = true
+
+  # Map IAM principals to Kubernetes RBAC groups so `iamadmin` can use kubectl
+  access_entries = {
+    iamadmin = {
+      principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/iamadmin"
+      kubernetes_groups = ["system:masters"]
+    }
+  }
   
   common_tags = local.common_tags
   

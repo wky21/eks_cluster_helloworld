@@ -98,18 +98,11 @@ module "eks" {
   }
 
   # Access entries for cluster access
-  #access_entries = var.access_entries
+  # Use `access_entries` to map IAM principals to Kubernetes RBAC groups (e.g. give `system:masters` to an admin user)
+  access_entries = var.access_entries
 
   # Enable cluster creator admin permissions
   enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
-
-  #map_users = [
-  #  {
-  #    userarn  = "arn:aws:iam::713881830177:user/iamadmin"
-  #    username = "iamadmin"
-  #    groups   = ["system:masters"]
-  #  }
-  #]
 
   tags = var.common_tags
 }
