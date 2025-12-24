@@ -84,10 +84,13 @@ module "eks" {
   enable_cluster_creator_admin_permissions = true
 
   # Map IAM principals to Kubernetes RBAC groups so `iamadmin` can use kubectl
+  # NOTE: groups starting with `system:` are reserved and cannot be created via
+  # the EKS Access Entry API. Map to a custom group and create a ClusterRoleBinding
+  # to grant `cluster-admin` to that group (two-step apply required).
   access_entries = {
     iamadmin = {
       principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/iamadmin"
-      kubernetes_groups = ["system:masters"]
+      kubernetes_groups = ["terraform-admins"]
     }
   }
   
@@ -95,3 +98,42 @@ module "eks" {
   
   depends_on = [module.vpc]
 }
+
+  /*
+    Kubernetes provider and RBAC binding. Note: the provider requires the EKS
+    cluster to exist before it can authenticate. Run Terraform in two steps:
+      1) `terraform apply` to create the cluster (and access entry)
+      2) `terraform apply` again to create the Kubernetes ClusterRoleBinding
+  */
+
+  data "aws_eks_cluster" "cluster" {
+    name = module.eks.cluster_name
+  }
+
+  data "aws_eks_cluster_auth" "cluster" {
+    name = module.eks.cluster_name
+  }
+
+  provider "kubernetes" {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    token                  = data.aws_eks_cluster_auth.cluster.token
+  }
+
+  resource "kubernetes_cluster_role_binding" "iamadmin" {
+    metadata {
+      name = "iamadmin-cluster-admin"
+    }
+
+    role_ref {
+      api_group = "rbac.authorization.k8s.io"
+      kind      = "ClusterRole"
+      name      = "cluster-admin"
+    }
+
+    subject {
+      kind      = "Group"
+      name      = "terraform-admins"
+      api_group = "rbac.authorization.k8s.io"
+    }
+  }

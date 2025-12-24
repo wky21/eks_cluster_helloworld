@@ -39,12 +39,17 @@ jobs:
         working-directory: terraform/environments/test
         run: terraform init
 
-      # 5. Terraform Plan
-      - name: Terraform Plan
+      # 5. Terraform Apply - create cluster only (target module.eks)
+      - name: Terraform Apply - create cluster
         working-directory: terraform/environments/test
-        run: terraform plan -out=tfplan
+        run: terraform apply -target=module.eks -auto-approve -lock-timeout=5m
 
-      # 6. Terraform Apply
-      - name: Terraform Apply
+      # 6. Wait for EKS cluster to be ACTIVE
+      - name: Wait for EKS cluster to be ACTIVE
+        run: |
+          aws eks wait cluster-active --name ${{ env.TF_VAR_cluster_name }} --region ${{ env.AWS_REGION }}
+
+      # 7. Terraform Apply - remaining resources (includes RBAC)
+      - name: Terraform Apply - finish
         working-directory: terraform/environments/test
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve -lock-timeout=5m
