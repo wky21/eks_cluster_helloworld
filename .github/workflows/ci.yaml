@@ -76,11 +76,11 @@ jobs:
           SLEEP=15
           ELAPSED=0
           while [ $ELAPSED -lt $MAX_WAIT ]; do
-            HOST=$(kubectl get svc nginx-hello-world -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
-            IP=$(kubectl get svc nginx-hello-world -n default -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+            HOST=$(kubectl get svc nginx-hello-world-service -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+            IP=$(kubectl get svc nginx-hello-world-service -n default -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
             if [ -n "$HOST" ] || [ -n "$IP" ]; then
               echo "LoadBalancer ingress available:"
-              kubectl get svc nginx-hello-world -n default -o wide
+              kubectl get svc nginx-hello-world-service -n default -o wide
               echo "hostname: $HOST"
               echo "ip: $IP"
               exit 0

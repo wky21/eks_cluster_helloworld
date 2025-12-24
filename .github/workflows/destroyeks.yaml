@@ -41,12 +41,12 @@ jobs:
         working-directory: terraform/environments/test
         run: terraform init
 
-      # 5. Terraform Plan Destroy
+      # 5. Terraform Plan Destroy (write plan to file, non-interactive)
       - name: Terraform Plan Destroy
         working-directory: terraform/environments/test
-        run: terraform plan -destroy
+        run: terraform plan -destroy -out=tfplan -input=false
 
-      # 6. Terraform Destroy
-      - name: Terraform Destroy
+      # 6. Terraform Apply Destroy (apply the saved plan with lock timeout)
+      - name: Terraform Apply Destroy
         working-directory: terraform/environments/test
-        run: terraform destroy -auto-approve
+        run: terraform apply -input=false -auto-approve -lock-timeout=5m tfplan
