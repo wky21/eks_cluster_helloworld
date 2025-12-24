@@ -11,6 +11,7 @@ env:
   AWS_REGION: us-east-1    
   ECR_REPOSITORY: eks-cluster-helloworld
   IMAGE_TAG: latest
+  CLUSTER_NAME: eks-test-cluster
 
 permissions:
   id-token: write
@@ -48,3 +49,46 @@ jobs:
 
           # Push to ECR
           docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # 5. Install kubectl
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      # 6. Update kubeconfig for the EKS cluster
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+      # 7. Deploy manifest and update image using kubectl set image
+      - name: Deploy to EKS
+        run: |
+          IMAGE="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+          kubectl apply -f k8s/helloworld-app.yaml
+          kubectl set image deployment/nginx-hello-world nginx-hello-world="$IMAGE" -n default
+          kubectl rollout status deployment/nginx-hello-world -n default --timeout=120s
+
+      # 8. Wait for and print Service LoadBalancer ingress (hostname/IP)
+      - name: Wait for LoadBalancer ingress
+        run: |
+          echo "Waiting for LoadBalancer ingress for service/nginx-hello-world (timeout 10m)..."
+          MAX_WAIT=600
+          SLEEP=15
+          ELAPSED=0
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            HOST=$(kubectl get svc nginx-hello-world -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+            IP=$(kubectl get svc nginx-hello-world -n default -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+            if [ -n "$HOST" ] || [ -n "$IP" ]; then
+              echo "LoadBalancer ingress available:"
+              kubectl get svc nginx-hello-world -n default -o wide
+              echo "hostname: $HOST"
+              echo "ip: $IP"
+              exit 0
+            fi
+            echo "No ingress yet. Sleeping $SLEEP seconds... (elapsed ${ELAPSED}s)"
+            sleep $SLEEP
+            ELAPSED=$((ELAPSED+SLEEP))
+          done
+          echo "Timed out waiting for LoadBalancer ingress after ${MAX_WAIT}s"
+          kubectl get svc nginx-hello-world -n default -o wide
+          exit 1
