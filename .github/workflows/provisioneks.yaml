@@ -49,7 +49,12 @@ jobs:
         run: |
           aws eks wait cluster-active --name ${{ env.TF_VAR_cluster_name }} --region ${{ env.AWS_REGION }}
 
-      # 7. Terraform Apply - remaining resources (includes RBAC)
+      # 7. Update kubeconfig so Terraform/Helm can talk to the cluster
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_cluster_name }} --region ${{ env.AWS_REGION }}
+
+      # 8. Terraform Apply - remaining resources (includes RBAC)
       - name: Terraform Apply - finish
         working-directory: terraform/environments/test
         run: terraform apply -auto-approve -lock-timeout=5m
