@@ -98,4 +98,4 @@ jobs:
           kubectl -n argocd wait --for=condition=available deployment/argocd-server --timeout=5m
 
           # Apply Application manifests
-          kubectl apply -f k8s/argocd-helloworld-application-dev.yaml -f k8s/argocd-helloworld-application-test.yaml -n argocd
+          kubectl apply -f k8s/argocd-helloworld-application-dev.yaml -n argocd
