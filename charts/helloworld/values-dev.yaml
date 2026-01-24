@@ -1,0 +1,31 @@
+replicaCount: 1
+
+image:
+  repository: 713881830177.dkr.ecr.us-east-1.amazonaws.com/eks-cluster-helloworld
+  tag: dev
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    cpu: 50m
+    memory: 64Mi
+
+# Probes
+readinessProbe:
+  path: /
+  port: 80
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+livenessProbe:
+  path: /
+  port: 80
+  initialDelaySeconds: 15
+  periodSeconds: 20

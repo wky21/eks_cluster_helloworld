@@ -1,0 +1,17 @@
+# Minimal Argocd values for test environment
+server:
+  service:
+    type: ClusterIP
+    # Uncomment to expose via LoadBalancer for easy access in test
+    # type: LoadBalancer
+
+# Optional: disable ingress creation by default
+controller:
+  enabled: true
+
+configs:
+  secret:
+    # Keep default for initial admin secret; consider integrating with secrets manager
+    argocdServerAdminPassword: ""
+
+# RBAC and resource settings can be adjusted as needed

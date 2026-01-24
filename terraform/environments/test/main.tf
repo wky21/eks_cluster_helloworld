@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.8"
+    }
   }
 }
 
@@ -120,6 +124,10 @@ module "eks" {
     token                  = data.aws_eks_cluster_auth.cluster.token
   }
 
+provider "helm" {
+  # configured to use the local Kubernetes provider
+}
+
   resource "kubernetes_cluster_role_binding" "iamadmin" {
     metadata {
       name = "iamadmin-cluster-admin"
@@ -137,3 +145,16 @@ module "eks" {
       api_group = "rbac.authorization.k8s.io"
     }
   }
+
+resource "helm_release" "argocd" {
+  name             = "argocd"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  namespace        = "argocd"
+  create_namespace = true
+  atomic           = true
+  timeout          = 600
+  values           = [file("${path.module}/argocd-values.yaml")]
+
+  depends_on = [module.eks]
+}

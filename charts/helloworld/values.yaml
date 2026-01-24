@@ -1,0 +1,40 @@
+replicaCount: 2
+
+image:
+  repository: 713881830177.dkr.ecr.us-east-1.amazonaws.com/eks-cluster-helloworld
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+readinessProbe:
+  path: /
+  port: 80
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+livenessProbe:
+  path: /
+  port: 80
+  initialDelaySeconds: 15
+  periodSeconds: 20
+
+# Optional: namespace can be provided at install time via `--namespace`
+# namespace: default
+
+# Horizontal Pod Autoscaler defaults (can be overridden per environment)
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 50
