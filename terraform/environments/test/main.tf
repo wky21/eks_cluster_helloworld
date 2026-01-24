@@ -6,6 +6,7 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    
     helm = {
       source  = "hashicorp/helm"
       version = "~> 2.8"
@@ -124,8 +125,12 @@ module "eks" {
     token                  = data.aws_eks_cluster_auth.cluster.token
   }
 
-provider "helm" {
-  # configured to use the local Kubernetes provider
+  provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    token                  = data.aws_eks_cluster_auth.cluster.token
+  }
 }
 
   resource "kubernetes_cluster_role_binding" "iamadmin" {

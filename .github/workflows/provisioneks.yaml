@@ -34,10 +34,10 @@ jobs:
         with:
           terraform_version: latest  # adjust version if needed
 
-      # 4. Initialize Terraform with existing S3 + DynamoDB backend
+      # 4. Initialize Terraform with existing S3 + DynamoDB backend (upgrade providers to match required_providers)
       - name: Terraform Init
         working-directory: terraform/environments/test
-        run: terraform init
+        run: terraform init -upgrade
 
       # 5. Terraform Apply - create cluster only (target module.eks)
       - name: Terraform Apply - create cluster
@@ -49,12 +49,7 @@ jobs:
         run: |
           aws eks wait cluster-active --name ${{ env.TF_VAR_cluster_name }} --region ${{ env.AWS_REGION }}
 
-      # 7. Update kubeconfig so Terraform/Helm can talk to the cluster
-      - name: Update kubeconfig
-        run: |
-          aws eks update-kubeconfig --name ${{ env.TF_VAR_cluster_name }} --region ${{ env.AWS_REGION }}
-
-      # 8. Terraform Apply - remaining resources (includes RBAC)
+      # 7. Terraform Apply - remaining resources (includes RBAC)
       - name: Terraform Apply - finish
         working-directory: terraform/environments/test
         run: terraform apply -auto-approve -lock-timeout=5m
