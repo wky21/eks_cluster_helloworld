@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: 713881830177.dkr.ecr.us-east-1.amazonaws.com/eks-cluster-helloworld
-  tag: dev
+  tag: addb83580828fd1f7017161cab38028cd85d0290
   pullPolicy: IfNotPresent
 
 service:
