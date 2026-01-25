@@ -34,11 +34,6 @@ jobs:
         with:
           terraform_version: latest  # adjust version if needed
 
-      # 3.1 Install Helm CLI to avoid provider download failures
-      - name: Install Helm CLI
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
       # 4. Initialize Terraform with existing S3 + DynamoDB backend (upgrade providers to match required_providers)
       - name: Terraform Init
         working-directory: terraform/environments/test
