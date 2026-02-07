@@ -1,0 +1,33 @@
+name: Build, Tag, and Push Docker Image
+
+inputs:
+  ecr-repository:
+    description: 'ECR repository name'
+    required: true
+  image-tag:
+    description: 'Docker image tag'
+    required: true
+  aws-region:
+    description: 'AWS region'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # 1. Login to Amazon ECR
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    # 2. Build, tag, and push Docker image
+    - name: Build, tag, and push image
+      shell: bash
+      run: |
+        # Build image with tag
+        docker build -t ${{ inputs.ecr-repository }}:${{ inputs.image-tag }} -f scripts/Dockerfile scripts/
+
+        # Tag for ECR registry
+        docker tag ${{ inputs.ecr-repository }}:${{ inputs.image-tag }} ${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr-repository }}:${{ inputs.image-tag }}
+
+        # Push to ECR
+        docker push ${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr-repository }}:${{ inputs.image-tag }}

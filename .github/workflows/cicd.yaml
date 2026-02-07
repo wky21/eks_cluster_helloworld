@@ -1,4 +1,4 @@
-name: CI - Build and Push to ECR
+name: CI - Build and Push to ECR and Deploy with Argo CD
 
 on:
   workflow_dispatch:

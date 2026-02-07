@@ -1,0 +1,42 @@
+name: Helm Operations
+
+inputs:
+  chart-name:
+    description: 'Helm chart directory name'
+    required: true
+  environment:
+    description: 'Environment (dev, test, prod)'
+    required: true
+  image-tag:
+    description: 'Docker image tag'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # 1. Setup Helm
+    - name: Setup Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: 'latest'
+
+    # 2. Helm lint chart
+    - name: Helm lint chart
+      shell: bash
+      run: |
+        helm lint charts/${{ inputs.chart-name }}
+
+    # 3. Update Helm chart values (image tag)
+    - name: Update Helm values image tag
+      shell: bash
+      env:
+        IMAGE_TAG: ${{ inputs.image-tag }}
+        VALUES_FILE: charts/${{ inputs.chart-name }}/values-${{ inputs.environment }}.yaml
+      run: |
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"
+        # Replace the image tag line (simple sed). Falls back to updating any 'tag:' line.
+        sed -i -E "s/(^\s*tag:\s*).*/\1${IMAGE_TAG}/" "$VALUES_FILE"
+        git add "$VALUES_FILE"
+        git commit -m "ci: bump ${{ inputs.chart-name }} image to ${IMAGE_TAG}" || echo "no changes to commit"
+        git push
