@@ -26,7 +26,7 @@ High-level run sequence
    - Purpose: create EKS cluster and required infra using terraform modules.
 
 3. Create ArgoCD / App namespaces in the cluster
-   - Create namespaces used by ArgoCD-managed apps (one per environment):
+   - If namespaces are missing, Create namespaces used by ArgoCD-managed apps (one per environment):
 
      kubectl create namespace helloworld-dev
      kubectl create namespace helloworld-test
@@ -46,9 +46,20 @@ High-level run sequence
      - Commits the updated values file back to the repo
      - ArgoCD detects the Git change and deploys to the target cluster/namespace
 
-   - Note: If you want to redeploy using the same image, edit the appropriate `values-*.yaml` file (for example `charts/helloworld/values-dev.yaml`) to change the image tag, commit, and push — ArgoCD will detect the change and rollout the update.
+   - Note: If you want to redeploy using the same image, edit the appropriate `values-*.yaml` file (for example `charts/helloworld/values-dev.yaml`) to change the image tag, commit, and push — ArgoCD will detect the change and rollout the update. Remember to git pull before pushing because ARGOCD updated the image tag so you have to update your local to match.
 
 5. Verify the app is running
+
+ARGO CD UI SETUP 
+
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+https://localhost:8080
+
+Enter this command in Powershell to get secret
+[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String((kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}")))
+
+login with admin/password from secret
+
    - Get the LoadBalancer external address:
 
      kubectl get svc -n helloworld-dev
@@ -58,6 +69,10 @@ High-level run sequence
 Teardown / Destroy
 1. Remove Kubernetes-provisioned resources first
    - Example: delete services (and other k8s objects) created for the app in the app namespace(s):
+
+   Run this command first or argocd will self heal. 
+   
+   kubectl delete app helloworld-dev -n argocd
 
      kubectl delete svc --all -n helloworld-dev
      kubectl delete deployment --all -n helloworld-dev
