@@ -1,3 +1,3 @@
-FROM nginx:mainline-alpine
+FROM cgr.dev/chainguard/nginx:latest
 COPY index.html /usr/share/nginx/html/index.html
 EXPOSE 80
