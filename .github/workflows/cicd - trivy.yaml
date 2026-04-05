@@ -1,4 +1,4 @@
-name: CI - Build and Push to ECR and Deploy with Argo CD
+name: CI - Build and Push to ECR and Deploy with Argo CD + Trivy
 
 on:
   workflow_dispatch:
@@ -51,7 +51,7 @@ jobs:
   
       # NEW: Scan the local image before pushing
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@18f2510ee396b1525775c163d6754003624ca975
+        uses: aquasecurity/trivy-action@trivy-action@0.33.1
         with:
           image-ref: '${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG'
           format: 'table'
