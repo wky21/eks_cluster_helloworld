@@ -51,7 +51,7 @@ jobs:
   
       # NEW: Scan the local image before pushing
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: '${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG'
           format: 'table'
