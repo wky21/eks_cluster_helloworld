@@ -1,0 +1,113 @@
+name: CI - Build and Push to ECR and Deploy with Argo CD
+
+on:
+  workflow_dispatch:
+  # Uncomment if you want to trigger on push
+  # push:
+  #   branches:
+  #     - main
+
+env:
+  AWS_REGION: us-east-1    
+  ECR_REPOSITORY: eks-cluster-helloworld
+  IMAGE_TAG: ${{ github.sha }}
+  CLUSTER_NAME: eks-test-cluster
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      # 2. Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::713881830177:role/GitHubTerraformEKS
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 3. Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 4. Build, tag, and push Docker image
+      - name: Build, tag, and push image
+        run: |
+          # Build image with "latest" tag
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG -f scripts/Dockerfile scripts/
+
+          # Tag for ECR registry
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+  
+      # NEW: Scan the local image before pushing
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@18f2510ee396b1525775c163d6754003624ca975
+        with:
+          image-ref: '${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG'
+          format: 'table'
+          exit-code: '1' # This stops the pipeline if vulnerabilities are found
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+          
+
+          # Push to ECR
+          docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # 5. Lint Helm chart
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+
+      - name: Helm lint chart
+        run: |
+          helm lint charts/helloworld
+
+      # 6. Update Helm chart values (image tag) so Argo CD will deploy
+      - name: Update Helm values image tag
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          VALUES_FILE: charts/helloworld/values-dev.yaml
+        run: |
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            # Replace the image tag line (simple sed). Falls back to updating any 'tag:' line.
+            sed -i -E "s/(^\s*tag:\s*).*/\1${IMAGE_TAG}/" "$VALUES_FILE"
+            git add "$VALUES_FILE"
+            git commit -m "ci: bump helloworld image to ${IMAGE_TAG}" || echo "no changes to commit"
+            git push
+
+      # 7. Setup kubectl and wait for Argo CD readiness, then apply Application manifests
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+      - name: Wait for Argo CD CRD and deployment, then apply Application manifests
+        run: |
+          # Wait for Argo CD CRD to be available
+          for i in $(seq 1 40); do
+            kubectl get crd applications.argoproj.io >/dev/null 2>&1 && break
+            echo "waiting for Argo CD CRD..."
+            sleep 3
+          done
+
+          # Wait for argocd-server deployment to be available (may take a few minutes)
+          kubectl -n argocd wait --for=condition=available deployment/argocd-server --timeout=5m
+
+          # Apply Application manifests
+          kubectl apply -f k8s/argocd-helloworld-application-dev.yaml -n argocd
