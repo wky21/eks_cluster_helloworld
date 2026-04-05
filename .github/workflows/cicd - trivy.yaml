@@ -53,7 +53,8 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0
         with:
-          image-ref: '${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG'
+          # calling ecr and image env vars in actions or vars won't be recognized
+          image-ref: '${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}'
           format: 'table'
           exit-code: '1' # This stops the pipeline if vulnerabilities are found
           ignore-unfixed: true
